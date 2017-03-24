@@ -2,7 +2,9 @@ package com.flurgle.camerakit;
 
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.graphics.Matrix;
 import android.graphics.SurfaceTexture;
+import android.util.Log;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
@@ -23,12 +25,14 @@ class TextureViewPreview extends PreviewImpl {
             @Override
             public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
                 setSize(width, height);
+                configureTransform();
                 dispatchSurfaceChanged();
             }
 
             @Override
             public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
                 setSize(width, height);
+                configureTransform();
                 dispatchSurfaceChanged();
                 setTruePreviewSize(mTrueWidth, mTrueHeight);
             }
@@ -68,6 +72,7 @@ class TextureViewPreview extends PreviewImpl {
     @Override
     void setDisplayOrientation(int displayOrientation) {
         mDisplayOrientation = displayOrientation;
+        configureTransform();
     }
 
     @Override
@@ -92,6 +97,30 @@ class TextureViewPreview extends PreviewImpl {
         if (mTextureView.getSurfaceTexture() != null) {
             mTextureView.getSurfaceTexture().setDefaultBufferSize(width, height);
         }
+    }
+
+    void configureTransform() {
+        Matrix matrix = new Matrix();
+        if (mDisplayOrientation % 270 == 0) {
+            final int width = getWidth();
+            final int height = getHeight();
+            // Rotate the camera preview when the screen is landscape.
+            matrix.setPolyToPoly(
+                    new float[]{
+                            0.f, 0.f, // top left
+                            width, 0.f, // top right
+                            0.f, height, // bottom left
+                            width, height, // bottom right
+                    }, 0,
+                    new float[]{
+                            width, height, // top left
+                            0.f, height, // top right
+                            width, 0.f, // bottom left
+                            0.f, 0.f, // bottom right
+                    }, 0,
+                    4);
+        }
+        mTextureView.setTransform(matrix);
     }
 
 }
